@@ -1,0 +1,14 @@
+{
+  "name": "linear-motion-graph-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node tests/server.js",
+    "test": "node --test tests/*.test.js",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.58.0"
+  }
+}
