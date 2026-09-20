@@ -39,10 +39,15 @@ canvas { display:block; width:100%; height:290px; background:#fff; touch-action:
 .result { background:#f0f5f8; border-radius:6px; padding:10px; font-variant-numeric:tabular-nums; margin-top:8px; overflow-wrap:anywhere; }
 .road { position:relative; height:100px; background:#edf2f4; border-radius:7px; }
 .road::before { content:""; position:absolute; left:0; right:0; top:55px; border-top:2px solid #718493; }
-[id$="-carContainer"] { position:absolute; top:25px; width:60px; transform:translateX(-50%); pointer-events:none; }
+[id$="-carContainer"] { position:absolute; z-index:2; top:25px; width:60px; transform:translateX(-50%); pointer-events:none; }
 [id$="-carSVG"] { display:block; width:60px; height:30px; transform-origin:center; }
 .road .mark { position:absolute; top:70px; font-size:11px; transform:translateX(-50%); white-space:nowrap; }
 .road .mark::before { content:""; position:absolute; left:50%; top:-15px; height:8px; border-left:1px solid #718493; }
+.origin-marker { position:absolute; top:68px; z-index:1; display:grid; justify-items:center; color:#a43a16; font-size:10px; font-weight:800; line-height:1.05; text-align:center; transform:translateX(-50%); white-space:nowrap; }
+.origin-marker::before { content:""; position:absolute; left:50%; top:-31px; height:25px; border-left:3px solid currentColor; transform:translateX(-50%); }
+.origin-marker::after { content:""; position:absolute; left:50%; top:-10px; width:7px; height:7px; border-radius:50%; background:currentColor; transform:translateX(-50%); }
+.origin-value { font-size:11px; }
+.road .origin-neighbor { visibility:hidden; }
 .road-caption { margin:6px 0 9px; }
 .small { color:var(--muted); font-size:12px; }
 .live-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); margin:0; gap:1px; background:var(--border); border:1px solid var(--border); border-radius:7px; overflow:hidden; }

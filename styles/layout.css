@@ -51,6 +51,11 @@ input[type=range] { height:30px; }
 [id$="-carSVG"] { width:42px; height:24px; }
 .road .mark { top:27px; font-size:9px; }
 .road .mark::before { top:-4px; height:4px; }
+.origin-marker { top:26px; font-size:0; }
+.origin-word { display:none; }
+.origin-value { font-size:10px; font-weight:800; }
+.origin-marker::before { top:-19px; height:15px; }
+.origin-marker::after { top:-6px; width:5px; height:5px; }
 .compact-values { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:2px; padding-top:4px; font-size:11px; }
 .compact-values span { white-space:nowrap; }
 .compact-values output { font-weight:650; font-variant-numeric:tabular-nums; }

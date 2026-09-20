@@ -4,6 +4,7 @@ import { Graph } from './shared/graph.js';
 import { setupActivities } from './shared/activities.js';
 import { createProfileBrowser, groupProfiles } from './shared/profile-browser.js';
 import { createBuilder } from './custom-motion/builder-ui.js';
+import { layoutTrack, mountTrackMarkers, originSummary } from './shared/motion-track.js';
 export function createSimulation(root, profiles) {
 let model = profiles.original ?? Object.values(profiles)[0];
 const prefix = root.id + '-';
@@ -17,7 +18,7 @@ let predictionHidden = false;
 let builder;
 const fields = [['t','Time t','s'],['position','Position s','m'],['velocity','Velocity v','m s⁻¹'],['speed','Speed |v|','m s⁻¹'],['acceleration','Acceleration a','m s⁻²'],['displacement','Displacement Δs','m'],['distance','Distance travelled','m'],['direction','Direction',''],['motionState','Motion state','']];
 $('liveState').innerHTML = fields.map(([key,label]) => `<div${key === 'motionState' ? ' class="wide"' : ''}><dt>${label}</dt><dd id="${prefix}live-${key}"></dd></div>`).join('');
-$('roadMarks').innerHTML = model.roadTicks.map(n => `<span class="mark" data-position="${n}">${n}</span>`).join('');
+let trackMarkers = mountTrackMarkers($('roadMarks'), model.road, model.roadTicks);
 const timeline = new Timeline(model.end, render);
 function numeric(id, fallback) {
   const number = $(id).valueAsNumber;
@@ -53,17 +54,14 @@ function render() {
   }
   $('segmentExplanation').textContent = explanation(state);
   $('endpointNote').textContent = t === 0 || t === model.end ? 'Endpoint derivative values use the one-sided motion within the displayed time interval.' : '';
-  const roadWidth = root.querySelector('.road').clientWidth, carWidth = $('carSVG').getBoundingClientRect().width;
-  const padding = carWidth / 2 + 5;
-  const roadX = position => padding + (position - model.road[0]) / (model.road[1] - model.road[0]) * (roadWidth - 2 * padding);
-  $('carContainer').style.left = `${roadX(state.position)}px`;
+  const road = root.querySelector('.road');
+  const track = layoutTrack({ road, car: $('carContainer'), range: model.road, position: state.position, ...trackMarkers });
   // No unique direction at a velocity jump: mute the car and explicitly label the state.
   // At rest use the incoming direction (or outgoing direction at t=0), even
   // after a direct seek. This is deterministic and avoids orientation jitter.
   $('carSVG').style.transform = facingAt(model, t) < 0 ? 'scaleX(-1)' : 'scaleX(1)';
   $('carSVG').style.opacity = state.velocity === null ? '0.4' : '1';
-  root.querySelector('.road').setAttribute('aria-label', `Car position ${fmt(state.position, 'metres')}; ${state.direction.toLowerCase()}`);
-  root.querySelectorAll('.mark').forEach(mark => { mark.style.left = `${roadX(Number(mark.dataset.position))}px`; });
+  road.setAttribute('aria-label', `Car position ${fmt(state.position, 'metres')}; ${state.direction.toLowerCase()}. ${originSummary(state.position, track.originVisible)}`);
   const order = isPosition ? 1 : 2, derivative = valueAt(model, t, order);
   $('primaryReadout').textContent = derivative === null ? `Slope → ${isPosition ? 'velocity' : 'acceleration'} undefined at corner` : `Slope = ${isPosition ? 'v = ds/dt' : 'a = dv/dt'} = ${fmt(derivative, isPosition ? 'm s⁻¹' : 'm s⁻²')}`;
   $('derivedReadout').textContent = derivative === null ? '○ Open circles: derivative undefined here.' : `Graph value = ${fmt(derivative, isPosition ? 'm s⁻¹' : 'm s⁻²')} · same time, same slope`;
@@ -181,7 +179,7 @@ function applyModel(next, announce = true, preserveTime = false) {
   if (model.profileId !== 'custom') profileBrowser?.setSelected(model.profileId);
   $('timeScrubber').max = model.end;
   $('durationLabel').textContent = `${model.end} s`;
-  $('roadMarks').innerHTML = model.roadTicks.map(n => `<span class="mark" data-position="${n}">${Number(n.toFixed(2))}</span>`).join('');
+  trackMarkers = mountTrackMarkers($('roadMarks'), model.road, model.roadTicks);
   if (isPosition) {
     for (const id of ['t1','t2']) $(id).max = model.end;
     $('t1').value = preserveTime ? numeric('t1', 0) : 0; $('t2').value = preserveTime ? numeric('t2', model.end) : Math.min(10, model.end);
