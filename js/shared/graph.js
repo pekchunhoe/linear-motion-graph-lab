@@ -70,6 +70,14 @@ export class Graph {
       c.fillText(String(Number(v.toFixed(2))), this.left - 8, this.y(v));
     }
     const stepT = niceStep(this.model.end, (this.right - this.left) / 40);
+    this.gridSteps = { time: stepT / (options.editGrid ? 4 : 1), value: stepY / (options.editGrid ? 4 : 1) };
+    if (options.editGrid) {
+      // Visible minor ticks divide each labelled interval into four snap steps.
+      for (let v = Math.ceil(this.range[0] / this.gridSteps.value) * this.gridSteps.value; v <= this.range[1]; v += this.gridSteps.value)
+        this.line(this.left, this.y(v), this.left + 4, this.y(v), '#8c9daa');
+      for (let time = 0; time <= this.model.end; time += this.gridSteps.time)
+        this.line(this.x(time), this.bottom, this.x(time), this.bottom - 4, '#8c9daa');
+    }
     c.textAlign = 'center';
     for (let time = 0; time <= this.model.end; time += stepT) {
       this.line(this.x(time), this.top, this.x(time), this.bottom, '#e3e9ef');

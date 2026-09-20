@@ -3,6 +3,7 @@ import { Timeline } from './shared/animation.js';
 import { Graph } from './shared/graph.js';
 import { setupActivities } from './shared/activities.js';
 import { createProfileBrowser, groupProfiles } from './shared/profile-browser.js';
+import { createBuilder } from './custom-motion/builder-ui.js';
 export function createSimulation(root, profiles) {
 let model = profiles.original ?? Object.values(profiles)[0];
 const prefix = root.id + '-';
@@ -13,6 +14,7 @@ const primary = new Graph($(isPosition ? 'positionCanvas' : 'velocityCanvas'), m
 const derived = new Graph($(isPosition ? 'velocityCanvas' : 'accCanvas'), model, isPosition ? 1 : 2, model.ranges[isPosition ? 1 : 2]);
 const graphs = [primary, derived];
 let predictionHidden = false;
+let builder;
 const fields = [['t','Time t','s'],['position','Position s','m'],['velocity','Velocity v','m s⁻¹'],['speed','Speed |v|','m s⁻¹'],['acceleration','Acceleration a','m s⁻²'],['displacement','Displacement Δs','m'],['distance','Distance travelled','m'],['direction','Direction',''],['motionState','Motion state','']];
 $('liveState').innerHTML = fields.map(([key,label]) => `<div${key === 'motionState' ? ' class="wide"' : ''}><dt>${label}</dt><dd id="${prefix}live-${key}"></dd></div>`).join('');
 $('roadMarks').innerHTML = model.roadTicks.map(n => `<span class="mark" data-position="${n}">${n}</span>`).join('');
@@ -87,7 +89,9 @@ function render() {
     $('accelerationAreaResult').textContent = valid ? `Δv = ∫a dt = ${fmt(area.deltaVelocity,'m s⁻¹')}. v_final = v_initial + Δv: ${fmt(area.finalVelocity)} = ${fmt(area.initialVelocity)} + (${fmt(area.deltaVelocity)}) m s⁻¹. Undefined acceleration at isolated corners does not change the area.` : 'Choose a starting time at or before the current time.';
     $('optionalReadout').textContent = `s = ${fmt(state.position,'m')}; displacement from the starting position = ${fmt(state.displacement,'m')}; accumulated distance = ${fmt(state.distance,'m')}. s(t) = s(0) + ∫₀ᵗ v dt.`;
   }
-  primary.draw(t,pOptions); derived.draw(t,dOptions);
+  builder?.prepare();
+  pOptions.editGrid = !!builder?.enabled;
+  primary.draw(t,pOptions); derived.draw(t,dOptions); builder?.draw();
 }
 $('playBtn').addEventListener('click',() => timeline.play());
 $('stopBtn').addEventListener('click',() => timeline.stop());
@@ -111,6 +115,7 @@ let active = null;
 for (const graph of graphs) {
   const canvas = graph.canvas, move = event => timeline.seek(graph.timeAt(event.clientX));
   canvas.addEventListener('pointerdown',event => {
+    if (graph === primary && builder?.enabled) return;
     if (!event.isPrimary || event.button !== 0 || active !== null) return;
     active = {id:event.pointerId,canvas}; canvas.focus({preventScroll:true});
     canvas.setPointerCapture(event.pointerId); move(event);
@@ -126,10 +131,12 @@ for (const graph of graphs) {
   for (const type of ['pointerup','pointercancel','lostpointercapture']) canvas.addEventListener(type,finish);
 }
 function pause() {
+  builder?.finish();
   if (active) { const {canvas,id} = active; active = null; if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id); }
   timeline.stop();
 }
 function onKeydown(event) {
+  if (event.defaultPrevented || builder?.contains(event.target)) return;
   if (event.target.closest('input,select,textarea,[contenteditable="true"]') || event.altKey || event.ctrlKey || event.metaKey) return;
   if (event.key === ' ' && event.target.closest('button,summary,a')) return;
   const step = event.shiftKey ? 1 : 0.1;
@@ -142,7 +149,7 @@ function onKeydown(event) {
   else return;
   event.preventDefault();
 }
-function resize() { graphs.forEach(graph => graph.resize()); render(); profileBrowser?.resize(); }
+function resize() { graphs.forEach(graph => graph.resize()); render(); profileBrowser?.resize(); builder?.resize(); }
 const activities = setupActivities(model, root, prefix);
 const groupedProfiles = groupProfiles(profiles);
 $('motionProfile').replaceChildren(...groupedProfiles.map(({ category, profiles: categoryProfiles }) => {
@@ -154,31 +161,38 @@ $('motionProfile').replaceChildren(...groupedProfiles.map(({ category, profiles:
   return group;
 }));
 let profileBrowser;
+let presetId = model.profileId;
 function loadProfile(profileId, announce = true) {
   if (!profiles[profileId]) return;
-  pause();
-  model = profiles[profileId];
-  timeline.end = model.end; timeline.time = 0;
+  presetId = profileId;
+  applyModel(profiles[profileId], announce);
+}
+function applyModel(next, announce = true, preserveTime = false) {
+  timeline.stop();
+  model = next;
+  timeline.end = model.end; timeline.time = preserveTime ? Math.min(timeline.time, model.end) : 0;
   for (const graph of graphs) { graph.model = model; graph.range = model.ranges[graph.order];
     graph.canvas.setAttribute('aria-label', `${model.title}: interactive ${['position','velocity','acceleration'][graph.order]}-time graph, 0 to ${model.end} seconds`);
   }
-  $('motionProfile').value = profileId;
+  if (model.profileId !== 'custom') $('motionProfile').value = model.profileId;
   $('profileDescription').textContent = model.description;
   $('profileFocus').textContent = `Focus: ${model.learningFocus}`;
   $('profileEquationText').textContent = model.equation;
-  profileBrowser?.setSelected(profileId);
+  if (model.profileId !== 'custom') profileBrowser?.setSelected(model.profileId);
   $('timeScrubber').max = model.end;
   $('durationLabel').textContent = `${model.end} s`;
   $('roadMarks').innerHTML = model.roadTicks.map(n => `<span class="mark" data-position="${n}">${Number(n.toFixed(2))}</span>`).join('');
   if (isPosition) {
     for (const id of ['t1','t2']) $(id).max = model.end;
-    $('t1').value = 0; $('t2').value = Math.min(10, model.end);
+    $('t1').value = preserveTime ? numeric('t1', 0) : 0; $('t2').value = preserveTime ? numeric('t2', model.end) : Math.min(10, model.end);
     const corners = model.discontinuities[2];
     $('profileNote').textContent = corners.length
-      ? `Acceleration is undefined at ${corners.join(', ')} s. A velocity jump requires an idealised impulse; isolated corner values are not finite accelerations.`
+      ? model.discontinuities[1].length
+        ? `Acceleration is undefined at ${corners.join(', ')} s. A velocity jump requires an idealised impulse; isolated corner values are not finite accelerations.`
+        : `Acceleration is undefined at ${corners.join(', ')} s because the one-sided velocity slopes differ. Velocity remains continuous; there is no velocity jump.`
       : 'On this smooth motion, velocity is the derivative of position and acceleration is the derivative of velocity.';
   } else {
-    $('areaStart').max = model.end; $('areaStart').value = 0;
+    $('areaStart').max = model.end; $('areaStart').value = preserveTime ? numeric('areaStart', 0) : 0;
     $('profileNote').textContent = model.zeroCrossings.length
       ? `Velocity crosses zero at ${model.zeroCrossings.join(', ')} s. Split the signed area there to calculate distance travelled.`
       : 'Position is the exact integral of this velocity graph. Signed area is displacement; absolute area is distance travelled.';
@@ -192,5 +206,7 @@ function loadProfile(profileId, announce = true) {
 profileBrowser = createProfileBrowser({ root, profiles, prefix, selectProfile: profileId => loadProfile(profileId) });
 $('motionProfile').addEventListener('change', event => loadProfile(event.target.value));
 loadProfile(model.profileId, false);
+builder = createBuilder({ root, graph: primary, family: model.id, pause: () => timeline.stop(), redraw: render,
+  activate: (custom, preserveTime) => custom ? applyModel(custom, false, preserveTime) : loadProfile(presetId, false) });
 return { pause, resize, onKeydown };
 }

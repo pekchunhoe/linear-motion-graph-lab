@@ -9,9 +9,33 @@ export function coefficientsAt(coefficients, order = 0) {
   for (let i = 0; i < order; i++) result = result.slice(1).map((c, j) => c * (j + 1));
   return result;
 }
-// Exact roots for the linear/quadratic derivatives of our cubic-or-lower presets.
+// Analytic roots through degree three (including cubic custom velocity).
 // A zero interval has no isolated roots. Its endpoints are already segment cuts.
 export function rootsAt(segment, order = 1) {
+  if (segment.roots?.[order]) return segment.roots[order];
+  const coefficients = coefficientsAt(segment.c, order);
+  const d = coefficients[3] ?? 0;
+  if (Math.abs(d) >= 1e-12) {
+    const [c, b, a] = coefficients;
+    const A = a / d, B = b / d, C = c / d;
+    const p = B - A * A / 3, q = 2 * A ** 3 / 27 - A * B / 3 + C;
+    const discriminant = (q / 2) ** 2 + (p / 3) ** 3;
+    const tolerance = 1e-14 * Math.max(1, (q / 2) ** 2, Math.abs((p / 3) ** 3));
+    let roots;
+    if (discriminant > tolerance) {
+      const r = Math.sqrt(discriminant);
+      roots = [Math.cbrt(-q / 2 + r) + Math.cbrt(-q / 2 - r) - A / 3];
+    } else if (discriminant >= -tolerance) {
+      const u = Math.cbrt(-q / 2);
+      roots = [2 * u - A / 3, -u - A / 3];
+    } else {
+      const r = 2 * Math.sqrt(-p / 3);
+      const theta = Math.acos(Math.max(-1, Math.min(1, -q / (2 * Math.sqrt(-((p / 3) ** 3))))));
+      roots = [0, 1, 2].map(k => r * Math.cos((theta + 2 * k * Math.PI) / 3) - A / 3);
+    }
+    return [...new Set(roots.map(u => u + segment.start))]
+      .filter(t => t >= segment.start && t <= segment.end).sort((a, b) => a - b);
+  }
   const [c = 0, b = 0, a = 0] = coefficientsAt(segment.c, order);
   const roots = Math.abs(a) < 1e-12 ? (Math.abs(b) < 1e-12 ? [] : [-c / b])
     : b * b - 4 * a * c < 0 ? []
@@ -38,12 +62,13 @@ export function valueAt(model, time, order = 0) {
 export function interval(model, start, end) {
   const a = clamp(start, model.end), b = clamp(end, model.end);
   let distance = 0;
-  for (const s of model.segments) {
+  for (const s of model.distanceAt ? [] : model.segments) {
     const lo = Math.max(Math.min(a, b), s.start), hi = Math.min(Math.max(a, b), s.end);
     if (hi <= lo) continue;
     const cuts = [lo, ...rootsAt(s).filter(t => t > lo && t < hi), hi];
     for (let i = 1; i < cuts.length; i++) distance += Math.abs(segmentValue(s, cuts[i]) - segmentValue(s, cuts[i - 1]));
   }
+  if (model.distanceAt) distance = Math.abs(model.distanceAt(b) - model.distanceAt(a));
   const displacement = valueAt(model, b) - valueAt(model, a);
   const v1 = valueAt(model, a, 1), v2 = valueAt(model, b, 1);
   return { displacement, distance, deltaTime: b - a, averageVelocity: near(a, b) ? null : displacement / (b - a),

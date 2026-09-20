@@ -8,6 +8,12 @@ On screens wider than 900 px, the selector also presents a compact grouped graph
 
 See [the complete profile equations, extension guide and upgrade verification](docs/MOTION-PROFILES.md).
 
+Each tab also offers **Motion source → Custom graph**. Drag labelled points on the primary graph, or expand **Edit points** for exact numeric inputs. Straight sections are the default; **Smooth** selects shape-preserving cubic Hermite interpolation. The derived graph, car, live state, tangent, secant, areas, predictions and generated challenges all consume the same compiled motion model.
+
+Use arrow keys on a focused point (Shift for larger changes). Snap follows the visible minor axis ticks, four subdivisions of each labelled interval; numeric inputs always retain exact entered values. Add/delete points, Undo/Redo and Reset graph apply independently to each tab. Editing pauses playback and preserves the current time, clamped to the final point's duration. Drafts and preset selections survive tab/source switches within the open page.
+
+See [custom builder mathematics, controls and verification](docs/CUSTOM-MOTION.md).
+
 ## Run locally
 
 Requires Node.js to run the optional development server:

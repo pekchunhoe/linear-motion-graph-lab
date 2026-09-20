@@ -18,7 +18,7 @@ function roadScale(bounds) {
 }
 export function makeProfile(family, definition) {
   const { segments, ...metadata } = definition;
-  if (segments.some(s => s.c.length > 4)) throw new Error('Presets support position polynomials through degree three.');
+  if (segments.some(s => s.c.length > 5)) throw new Error('Motion supports position polynomials through degree four.');
   const profile = { ...metadata, id: family, segments, end: segments.at(-1).end };
   profile.duration = profile.end;
   profile.shortTitle ??= profile.title;
