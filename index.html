@@ -5,8 +5,9 @@
 <body><a class="skip-link" href="#main">Skip to simulation</a>
 <header class="lab-header"><h1>Linear Motion Graph Lab</h1><p>One motion. Connected graphs.</p></header>
 <nav aria-label="Motion graph tabs"><div class="tabs" role="tablist" aria-label="Motion graph relationship">
-<button id="tab1" role="tab" aria-selected="true" aria-controls="sim1"><span>Displacement → Velocity</span><strong>s–t → v–t</strong></button>
-<button id="tab2" role="tab" aria-selected="false" aria-controls="sim2" tabindex="-1"><span>Velocity → Acceleration</span><strong>v–t → a–t</strong></button>
+<button id="tab1" role="tab" aria-label="Position to Velocity" aria-selected="true" aria-controls="sim1"><span>Position → Velocity</span><strong>s → v</strong></button>
+<button id="tab2" role="tab" aria-label="Velocity to Acceleration" aria-selected="false" aria-controls="sim2" tabindex="-1"><span>Velocity → Acceleration</span><strong>v → a</strong></button>
+<button id="tab3" role="tab" aria-label="Position to Velocity to Acceleration" aria-selected="false" aria-controls="sim3" tabindex="-1"><span>Position → Velocity → Acceleration</span><strong>s → v → a</strong></button>
 </div></nav><main id="main"><section id="sim1" role="tabpanel" aria-labelledby="tab1" tabindex="0">
 <div class="profile-picker"><label for="sim1-motionProfile">Motion graph</label><select id="sim1-motionProfile" aria-describedby="sim1-profileDescription sim1-profileFocus"></select><div class="profile-summary"><p id="sim1-profileDescription"></p><p id="sim1-profileFocus" class="profile-focus"></p></div><div class="profile-tools"><button id="sim1-browseProfiles" type="button" aria-controls="sim1-profileBrowser" aria-expanded="false">Browse graphs</button><details id="sim1-profileEquation" class="profile-equation"><summary>Show equation</summary><code id="sim1-profileEquationText"></code></details></div><section id="sim1-profileBrowser" class="profile-browser" aria-label="Position-time graph library"></section><span id="sim1-profileAnnouncement" class="sr-only" role="status"></span></div>
 <div class="toolbar" aria-label="Playback controls">

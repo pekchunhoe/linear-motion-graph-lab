@@ -28,7 +28,7 @@ export function renderProfilePreview(canvas, profile) {
   const context = canvas.getContext('2d');
   context.setTransform(canvas.width / width, 0, 0, canvas.height / height, 0, 0);
   context.clearRect(0, 0, width, height);
-  const order = profile.id === 1 ? 0 : 1;
+  const order = profile.previewOrder ?? (profile.id === 1 ? 0 : 1);
   const [min, max] = profile.ranges[order];
   const left = 7, right = width - 7, top = 6, bottom = height - 7;
   const x = time => left + time / profile.end * (right - left);

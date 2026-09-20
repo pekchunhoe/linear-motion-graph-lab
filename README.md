@@ -1,6 +1,6 @@
 # Linear Motion Graph Lab
 
-A single-page, smartphone-first simulation with **Displacement → Velocity** and **Velocity → Acceleration** tabs. Each tab retains its own timeline, predictions, activity answers and tool settings. Switching tabs pauses the outgoing motion.
+A single-page, smartphone-first simulation with **Position → Velocity**, **Velocity → Acceleration**, and **Position → Velocity → Acceleration** tabs. Each tab retains its own timeline, predictions, activity answers and tool settings. Switching tabs pauses the outgoing motion.
 
 Choose among **9 position-time profiles** and **8 velocity-time profiles** using the compact Motion graph menu. Both original journeys remain the defaults. Each tab retains its own selection; changing a motion pauses and resets that tab to zero. The graphs, car, values, axes, tools and challenges all use the selected mathematical model.
 
@@ -13,6 +13,10 @@ Each tab also offers **Motion source → Custom graph**. Drag labelled points on
 Use arrow keys on a focused point (Shift for larger changes). Snap follows the visible minor axis ticks, four subdivisions of each labelled interval; numeric inputs always retain exact entered values. Add/delete points, Undo/Redo and Reset graph apply independently to each tab. Editing pauses playback and preserves the current time, clamped to the final point's duration. Drafts and preset selections survive tab/source switches within the open page.
 
 See [custom builder mathematics, controls and verification](docs/CUSTOM-MOTION.md).
+
+The third tab stacks all three graphs on one shared time axis with separate quantity scales. Its ten presets reference the existing validated profiles. In Custom mode, **Build from** switches between independent position and velocity drafts, each with its own editing history and settings. Velocity-source **Initial position s₀** shifts position and the car without changing velocity, acceleration, displacement or distance. Preset and draft playback times are restored when returning to them.
+
+Use the combined prediction activity to reveal the two derived graphs in sequence, or highlight an interval across all three graphs. Position and velocity tangents use exact derivatives. The acceleration area tool explicitly identifies intervals containing idealized velocity jumps, which cannot be explained by the finite acceleration area alone. See [the STVTAT continuation report](docs/STVTAT-CONTINUATION.md) for the implementation audit and verification results.
 
 ## Run locally
 
@@ -28,7 +32,7 @@ Deploy the project as a static website with `index.html` at its root. Runtime fi
 
 ## Controls and learning tools
 
-- Play / Stop / Reset and playback speed control both graphs. Drag either graph horizontally to scrub and pause; vertical touch scrolling remains available.
+- Play / Stop (Pause in the third tab) / Reset and playback speed control all graphs in the active tab. Drag a read-only graph horizontally to scrub and pause; vertical touch scrolling remains available.
 - Focus a graph: arrows move 0.1 s, Shift + arrow moves 1 s, Home / End select endpoints, Space plays/pauses, and R resets.
 - Focus the tabs: Left / Right select the adjacent tab; Home / End select the first / last tab.
 - The strip above the graphs shows the car and key values. Expand **Full live state & motion explanation** for position, displacement, distance, speed, direction, acceleration and corner explanations.

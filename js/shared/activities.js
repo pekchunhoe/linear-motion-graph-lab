@@ -87,7 +87,8 @@ export function setupActivities(model, root, prefix) {
     showQuestion();
   }
   setProfile(model);
-  if (id === 1) setupExample($, namespace); else setupABCDE($, namespace);
+  if (id === 1 && $('exampleQuestions')) setupExample($, namespace);
+  else if (id === 2 && $('abcdeQuestions')) setupABCDE($, namespace);
   return { setProfile };
 }
 function setupExample($, namespace) {

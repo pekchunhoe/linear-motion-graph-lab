@@ -1,7 +1,7 @@
 import { valueAt, segmentValue, limitsAt, rootsAt } from './physics-core.js';
 export const colors = ['#2454b8', '#087b65', '#8540a3'];
 const units = ['s (m)', 'v (m s⁻¹)', 'a (m s⁻²)'];
-function niceStep(range, count) {
+export function niceStep(range, count) {
   const raw = range / count, power = 10 ** Math.floor(Math.log10(raw));
   return [1, 2, 2.5, 5, 10].find(n => n * power >= raw) * power;
 }
@@ -18,7 +18,7 @@ export class Graph {
     this.canvas.height = Math.round(height * dpr);
     this.ctx.setTransform(this.canvas.width / width, 0, 0, this.canvas.height / height, 0, 0);
   }
-  x(t) { return this.left + t / this.model.end * (this.right - this.left); }
+  x(t) { const axis = this.timeAxis; return axis ? axis.left + (t - axis.min) / (axis.max - axis.min) * (axis.right - axis.left) : this.left + t / this.model.end * (this.right - this.left); }
   y(value) { return this.bottom - (value - this.range[0]) / (this.range[1] - this.range[0]) * (this.bottom - this.top); }
   timeAt(clientX) {
     return (clientX - this.canvas.getBoundingClientRect().left - this.left) / (this.right - this.left) * this.model.end;
@@ -69,7 +69,7 @@ export class Graph {
       this.line(this.left, this.y(v), this.right, this.y(v), '#e3e9ef');
       c.fillText(String(Number(v.toFixed(2))), this.left - 8, this.y(v));
     }
-    const stepT = niceStep(this.model.end, (this.right - this.left) / 40);
+    const stepT = this.timeAxis?.step ?? niceStep(this.model.end, (this.right - this.left) / 40);
     this.gridSteps = { time: stepT / (options.editGrid ? 4 : 1), value: stepY / (options.editGrid ? 4 : 1) };
     if (options.editGrid) {
       // Visible minor ticks divide each labelled interval into four snap steps.
@@ -92,6 +92,10 @@ export class Graph {
     c.textAlign = 'right'; c.fillText('t (s)', this.width - 5, this.height - 8);
     // Clip teaching overlays to the plotting rectangle, preserving axes and units.
     c.save(); c.beginPath(); c.rect(this.left - 6, this.top - 6, this.right - this.left + 12, this.bottom - this.top + 12); c.clip();
+    if (options.highlight) {
+      const [a, b] = options.highlight;
+      c.fillStyle = '#2454b812'; c.fillRect(this.x(Math.min(a,b)), this.top, Math.abs(this.x(b)-this.x(a)), this.bottom-this.top);
+    }
     if (options.area) this.shade(options.start, t, options.absolute);
     for (const s of this.model.segments) {
       c.beginPath(); c.strokeStyle = colors[this.order]; c.lineWidth = 2.5;
@@ -118,8 +122,10 @@ export class Graph {
     }
     if (options.average) {
       const [a, b] = options.average, va = valueAt(this.model, a, this.order), vb = valueAt(this.model, b, this.order);
-      this.line(this.x(a), this.y(va), this.x(b), this.y(vb), '#8540a3', [9, 3, 2, 3], 2.5);
-      this.point(a, va, '#8540a3', false, 5); this.point(b, vb, '#8540a3', false, 5);
+      if (va !== null && vb !== null) {
+        this.line(this.x(a), this.y(va), this.x(b), this.y(vb), '#8540a3', [9, 3, 2, 3], 2.5);
+        this.point(a, va, '#8540a3', false, 5); this.point(b, vb, '#8540a3', false, 5);
+      }
     }
     this.point(t, value, '#bd283a', false, 5);
     c.restore();

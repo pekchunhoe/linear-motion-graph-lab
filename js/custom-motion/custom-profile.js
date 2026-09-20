@@ -10,6 +10,7 @@ export const starter = family => ({ style: 'straight', points: [
 export function validateDefinition(family, definition) {
   if (![1, 2].includes(family)) throw new Error('Unknown motion family.');
   if (!definition || !['straight', 'smooth'].includes(definition.style)) throw new Error('Choose Straight or Smooth.');
+  if (definition.initialPosition !== undefined && (!Number.isFinite(definition.initialPosition) || Math.abs(definition.initialPosition) > 1000)) throw new Error('Initial position must be between −1000 and +1000 m.');
   const points = definition.points;
   if (!Array.isArray(points) || points.length < 2 || points.length > MAX_POINTS) throw new Error('Use 2–12 points.');
   points.forEach((point, i) => {
@@ -40,7 +41,7 @@ export function primarySegments({ points, style }) {
 export function compileCustom(family, definition) {
   validateDefinition(family, definition);
   const primary = primarySegments(definition);
-  let position = 0, distance = 0;
+  let position = family === 2 ? definition.initialPosition ?? 0 : 0, distance = 0;
   const segments = primary.map(s => {
     const segment = family === 1 ? { ...s, c: [...s.c] }
       : { ...s, c: [position, ...s.c.map((c, i) => c / (i + 1))] };

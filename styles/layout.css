@@ -3,7 +3,7 @@ body { max-width:1200px; padding:6px 8px; font-size:12px; }
 .lab-header { display:block; padding:2px 0 7px; }
 .lab-header h1 { font-size:19px; letter-spacing:-.4px; margin:0; line-height:1.3; }
 .lab-header p { display:none; }
-.tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; margin-bottom:8px; }
+.tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin-bottom:8px; }
 .tabs button { min-width:0; min-height:44px; padding:4px 2px; border-radius:7px; line-height:1.2; }
 .tabs span { display:block; font-size:10px; font-weight:500; white-space:nowrap; }
 .tabs strong { display:block; font-size:14px; margin-top:2px; }
@@ -144,4 +144,39 @@ button:disabled { cursor:default; opacity:.5; }
   .card { padding:8px; }
   .motion-strip { height:83px; }
   canvas { height:270px; }
+}
+
+/* Three quantities keep one aligned horizontal time axis at every viewport. */
+.combined-intro { margin:0 0 6px; font-weight:650; }
+.combined-intro span { display:block; color:var(--muted); font-weight:400; }
+.combined-source { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.combined-source select { min-width:0; flex:1; max-width:260px; }
+.combined-workspace { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; }
+.combined-stack { grid-template-columns:minmax(0,1fr); gap:6px; }
+.combined-stack canvas { height:160px; }
+.combined-view.custom-mode .combined-stack canvas { height:190px; }
+.graph-role { margin-left:auto; font-size:9px; color:var(--muted); }
+.combined-stack .graph-card .result { min-height:30px; }
+.graph-prediction { min-height:190px; display:grid; place-items:center; color:var(--muted); border:1px dashed var(--border); }
+.combined-side { min-width:0; }
+.combined-side .motion-strip { height:auto; min-height:76px; margin-top:0; }
+.combined-side .compact-values { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.combined-side .compact-values span { white-space:normal; overflow-wrap:anywhere; }
+.combined-side .toolbar { gap:4px; }
+.combined-side .toolbar button { padding:6px; }
+.combined-side .speed-label select { min-width:48px; }
+.combined-side .live-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.combined-side .live-grid .wide { grid-column:1/-1; }
+.combined-view [data-builder-details] { min-width:0; }
+@media(max-width:699px) {
+  .tabs span { display:none; }
+  .tabs strong { font-size:14px; }
+}
+@media(min-width:700px) {
+  .tabs span { font-size:10px; white-space:normal; }
+}
+@media(min-width:1000px) and (orientation:landscape) {
+  .combined-workspace { grid-template-columns:minmax(0,1fr) minmax(285px,.55fr); gap:12px; align-items:start; }
+  .combined-stack canvas,.combined-view.custom-mode .combined-stack canvas { height:185px; }
+  .combined-side .learning-grid { grid-template-columns:minmax(0,1fr); }
 }

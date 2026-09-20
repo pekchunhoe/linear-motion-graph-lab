@@ -72,7 +72,7 @@ test('tabs preserve all independent state without navigation or hidden animation
 
 test('tab keyboard semantics, unique IDs and accessible references', async ({page}) => {
   await page.locator('#tab1').focus();
-  for (const [key, active] of [['ArrowRight',2],['ArrowRight',1],['End',2],['Home',1],['ArrowLeft',2]]) {
+  for (const [key, active] of [['ArrowRight',2],['ArrowRight',3],['ArrowRight',1],['End',3],['Home',1],['ArrowLeft',3]]) {
     await page.keyboard.press(key);
     await expect(page.locator('#tab'+active)).toBeFocused();
     await expect(page.locator('#tab'+active)).toHaveAttribute('aria-selected','true');

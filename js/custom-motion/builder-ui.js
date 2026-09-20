@@ -3,13 +3,13 @@ import { MAX_DURATION, MIN_GAP, valueLimit } from './custom-profile.js';
 
 const letter = i => String.fromCharCode(65 + i);
 const number = n => Number(n.toFixed(4));
-export function createBuilder({ root, graph, family, pause, activate, redraw }) {
-  const state = new BuilderState(family), prefix = `${root.id}-builder-`;
+export function createBuilder({ root, graph, family, pause, activate, redraw, managed = false, onSelect }) {
+  const state = new BuilderState(family), prefix = `${root.id}-builder-${managed ? family + '-' : ''}`;
   const unit = family === 1 ? 'm' : 'm/s', quantity = family === 1 ? 'Position' : 'Velocity';
   let enabled = false, drag = null;
   const source = document.createElement('div'); source.className = 'motion-source';
   source.innerHTML = '<span>Motion source</span><button type="button" aria-pressed="true" data-source="preset">Preset graphs</button><button type="button" aria-pressed="false" data-source="custom">Custom graph</button>';
-  root.prepend(source);
+  if (!managed) root.prepend(source);
   const panel = document.createElement('section'); panel.className = 'custom-builder'; panel.hidden = true;
   panel.setAttribute('aria-label', 'Custom Motion Graph Builder');
   panel.innerHTML = `<div class="builder-toolbar">
@@ -27,17 +27,21 @@ export function createBuilder({ root, graph, family, pause, activate, redraw }) 
   <span class="sr-only" role="status" data-output="announcement"></span>`;
   // Keep both graphs aligned; detailed editing follows the primary graph.
   const card = graph.canvas.closest('.graph-card');
-  root.querySelector('.dashboard').before(panel);
+  if (managed) root.querySelector('[data-builder-controls]').append(panel);
+  else root.querySelector('.dashboard').before(panel);
   const drawer = document.createElement('section'); drawer.className = 'custom-builder builder-drawer'; drawer.hidden = true;
   drawer.setAttribute('aria-label', 'Custom graph point details');
   for (const element of panel.querySelectorAll('details,[data-output="totals"],[data-output="summary"],[data-output="announcement"]')) drawer.append(element);
-  card.append(drawer);
+  if (managed) root.querySelector('[data-builder-details]').append(drawer);
+  else card.append(drawer);
+  if (managed && family === 2) panel.insertAdjacentHTML('beforeend', '<label>Initial position s₀ (m)<input data-control="initialPosition" type="number" min="-1000" max="1000" step="any" value="0"></label>');
   const wrapper = document.createElement('div'); wrapper.className = 'editable-graph';
   graph.canvas.before(wrapper); wrapper.append(graph.canvas);
   const nodes = document.createElement('div'); nodes.className = 'graph-nodes'; nodes.hidden = true; wrapper.append(nodes);
-  const output = name => root.querySelector(`.custom-builder [data-output="${name}"]`);
-  const control = name => root.querySelector(`.custom-builder [data-control="${name}"]`);
-  const action = name => root.querySelector(`.custom-builder [data-action="${name}"]`);
+  const find = selector => panel.querySelector(selector) ?? drawer.querySelector(selector);
+  const output = name => find(`[data-output="${name}"]`);
+  const control = name => find(`[data-control="${name}"]`);
+  const action = name => find(`[data-action="${name}"]`);
   const presetPicker = root.querySelector('.profile-picker');
   let limit = family === 1 ? 40 : 20;
   const originalDescription = graph.canvas.getAttribute('aria-describedby');
@@ -51,28 +55,35 @@ export function createBuilder({ root, graph, family, pause, activate, redraw }) 
       activate(state.model, true); refresh(); announce();
     } catch (error) { output('error').textContent = error.message; }
   }
-  function setEnabled(value) {
+  function setEnabled(value, notify = true) {
     finish(); pause(); enabled = value; panel.hidden = !value; drawer.hidden = !value; nodes.hidden = !value;
-    presetPicker.hidden = value; root.classList.toggle('custom-mode', value);
+    if (!managed) { presetPicker.hidden = value; root.classList.toggle('custom-mode', value); }
     for (const button of source.querySelectorAll('button')) button.setAttribute('aria-pressed', String((button.dataset.source === 'custom') === value));
     graph.canvas.setAttribute('aria-describedby', value ? `${originalDescription} ${prefix}summary` : originalDescription);
     root.querySelector(`[id="${root.id}-keyboardHelp"]`).textContent = value
       ? 'Drag a labelled point to edit. Use the timeline or the derived graph to scrub. Focus a point and use arrow keys to edit; Shift increases the step. Tab moves between controls.'
       : 'Drag either graph to scrub and pause. Keyboard: ← → 0.1 s · Shift + arrow 1 s · Home / End · Space play/pause · R reset.';
-    activate(value ? state.model : null, false); refresh();
+    if (notify) activate(value ? state.model : null, false);
+    refresh();
   }
   source.addEventListener('click', e => { if (e.target.dataset.source) setEnabled(e.target.dataset.source === 'custom'); });
   for (const [name, operation] of Object.entries({ add: () => state.add(), delete: () => state.remove(), undo: () => state.history(), redo: () => state.history(true), reset: () => state.reset() })) {
     action(name).addEventListener('click', () => edit(operation));
   }
   control('style').addEventListener('change', () => edit(() => state.apply({ ...state.definition, style: control('style').value })));
+  control('initialPosition')?.addEventListener('change', () => edit(() => state.apply({ ...state.definition, initialPosition: control('initialPosition').valueAsNumber })));
   control('snap').addEventListener('change', () => { state.snap = control('snap').checked; redraw(); refresh(); });
   control('limit').addEventListener('change', () => {
     const value = control('limit').valueAsNumber, minimum = Math.max(family === 1 ? 25 : 5, ...state.definition.points.map(p => Math.abs(p.y)));
     if (!Number.isFinite(value) || value < minimum || value > valueLimit(family)) { output('error').textContent = `Choose a range from ${minimum} to ${valueLimit(family)} ${unit}, including all points.`; return; }
     pause(); limit = value; output('error').textContent = ''; redraw(); refresh();
   });
-  function select(i, announceSelection = true) { state.selected = i; refresh(); redraw(); if (announceSelection) announce(); }
+  function select(i, announceSelection = true) {
+    state.selected = i;
+    const segment = state.model.primarySegments[Math.min(i, state.model.primarySegments.length - 1)];
+    onSelect?.(segment.start, segment.end);
+    refresh(); redraw(); if (announceSelection) announce();
+  }
   function numericEdit(e) {
     const input = e.target, i = Number(input.dataset.index), field = input.dataset.field;
     if (!field) return;
@@ -151,6 +162,7 @@ export function createBuilder({ root, graph, family, pause, activate, redraw }) 
       input.min = i ? points[i - 1].t + MIN_GAP : 0; input.max = points[i + 1] ? points[i + 1].t - MIN_GAP : MAX_DURATION;
     });
     control('style').value = state.definition.style;
+    if (control('initialPosition') && document.activeElement !== control('initialPosition')) control('initialPosition').value = state.definition.initialPosition ?? 0;
     action('undo').disabled = !state.undoStack.length; action('redo').disabled = !state.redoStack.length;
     action('add').disabled = points.length >= 12; action('delete').disabled = points.length <= 2;
     const p = points[state.selected], sIndex = Math.min(state.selected, points.length - 2), s = state.model.primarySegments[sIndex];
@@ -172,7 +184,7 @@ export function createBuilder({ root, graph, family, pause, activate, redraw }) 
       const button = nodes.children[i]; if (button) { button.style.left = `${x}px`; button.style.top = `${y}px`; }
     });
   }
-  return { get enabled() { return enabled; }, get range() { return [-limit * 1.1, limit * 1.1]; }, draw,
+  return { graph, setEnabled, get model() { return state.model; }, get enabled() { return enabled; }, get range() { return [-limit * 1.1, limit * 1.1]; }, draw,
     finish, resize: refresh, contains: target => panel.contains(target) || drawer.contains(target) || nodes.contains(target) || source.contains(target),
     prepare: () => { if (enabled) graph.range = drag ? drag.range : [-limit * 1.1, limit * 1.1]; } };
 }
