@@ -1,3 +1,7 @@
+# Motion profile library upgrade
+
+The latest verification and complete equations are in [docs/MOTION-PROFILES.md](docs/MOTION-PROFILES.md). The original combined-app report below is retained as historical evidence.
+
 # COMBINED LINEAR MOTION GRAPH LAB
 
 Implemented and verified locally on 14 September 2026 in `D:\Physics Simulation\linear-motion-lab`.

@@ -7,11 +7,13 @@
 <div class="tabs" role="tablist" aria-label="Motion graph relationship">
 <button id="tab1" role="tab" aria-selected="true" aria-controls="sim1"><span>Displacement → Velocity</span><strong>s–t → v–t</strong></button>
 <button id="tab2" role="tab" aria-selected="false" aria-controls="sim2" tabindex="-1"><span>Velocity → Acceleration</span><strong>v–t → a–t</strong></button>
-</div><main id="main"><section id="sim1" role="tabpanel" aria-labelledby="tab1" tabindex="0"><div class="toolbar" aria-label="Playback controls">
+</div><main id="main"><section id="sim1" role="tabpanel" aria-labelledby="tab1" tabindex="0">
+<div class="profile-picker"><label for="sim1-motionProfile">Motion graph</label><select id="sim1-motionProfile" aria-describedby="sim1-profileDescription"></select><p id="sim1-profileDescription"></p><span id="sim1-profileAnnouncement" class="sr-only" role="status"></span></div>
+<div class="toolbar" aria-label="Playback controls">
 <button id="sim1-playBtn" class="primary">▶ Play</button><button id="sim1-stopBtn">■ Stop</button><button id="sim1-resetBtn">↺ Reset</button>
 <label class="speed-label"><span class="sr-only">Playback speed</span><select id="sim1-playbackSpeed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
 <span id="sim1-playbackStatus" role="status">Paused</span></div>
-<div class="timeline"><label for="sim1-timeScrubber">Time <output id="sim1-timeReadout">0.00 s</output></label><input id="sim1-timeScrubber" type="range" min="0" max="30" step="0.01" value="0" aria-label="Simulation time in seconds"><span>30 s</span></div>
+<div class="timeline"><label for="sim1-timeScrubber">Time <output id="sim1-timeReadout">0.00 s</output></label><input id="sim1-timeScrubber" type="range" min="0" max="30" step="0.01" value="0" aria-label="Simulation time in seconds"><span id="sim1-durationLabel">30 s</span></div>
 
 <section class="card motion-strip" aria-label="Motion and live values"><div class="road" role="img" aria-label="Car position along a road in metres"><div id="sim1-roadMarks"></div><div id="sim1-carContainer"><svg
                         id="sim1-carSVG"
@@ -90,7 +92,7 @@
                             fill="yellow"
                         />
                     </svg></div></div><div class="compact-values"><span>t <output id="sim1-compact-t"></output></span><span>s <output id="sim1-compact-position"></output></span><span>v <output id="sim1-compact-velocity"></output></span></div></section><div class="dashboard" id="sim1-dashboard">
-<section class="card graph-card"><div class="panel-heading"><span class="step">s–t</span><h2>Displacement–Time</h2></div>
+<section class="card graph-card"><div class="panel-heading"><span class="step">s–t</span><h2>Position–Time</h2></div>
 <canvas id="sim1-positionCanvas" tabindex="0" role="img" aria-label="Interactive position-time graph" aria-describedby="sim1-keyboardHelp sim1-primaryReadout">Use the time slider to explore the graph. Live values follow below.</canvas>
 <p class="graph-key"><span class="curve-key position">slope → velocity</span><span class="tangent-key">instantaneous tangent</span></p>
 <p id="sim1-primaryReadout" class="result"></p></section>
@@ -106,7 +108,7 @@
       <div class="input-row"><label>t₁ (s)<input id="sim1-t1" type="number" min="0" max="30" step="0.1" value="0"></label><label>t₂ (s)<input id="sim1-t2" type="number" min="0" max="30" step="0.1" value="10"></label></div>
       <p id="sim1-averageResult" class="result" role="status"></p></details>
 <details id="sim1-derivedInfo"><summary>Derived acceleration · a = dv/dt = d²s/dt²</summary>
-<p id="sim1-optionalReadout"></p><p>Acceleration is undefined at 5, 10, 15 and 25 s. At 15 and 25 s velocity jumps: an idealisation requiring an impulse, not a finite acceleration.</p></details>
+<p id="sim1-optionalReadout"></p><p id="sim1-profileNote"></p></details>
 <details id="sim1-concepts"><summary>Concepts & graph rules</summary><div id="sim1-conceptContent"></div></details></section>
 <section class="activities-column"><details id="sim1-motionDetails"><summary>Full live state & motion explanation</summary><p class="small road-caption">Position coordinate (m) · positive direction →</p>
 <dl class="live-grid" id="sim1-liveState"></dl><p id="sim1-segmentExplanation" class="interpretation"></p>
@@ -116,11 +118,13 @@
 <label>Choose a challenge<select id="sim1-challengeSelect"></select></label><p id="sim1-challengeQuestion"></p>
 <label>Your answer<input id="sim1-challengeAnswer" autocomplete="off"></label><div class="actions"><button id="sim1-checkAnswer">Check answer</button><button id="sim1-hintBtn">Hint</button><button id="sim1-solutionBtn">Show solution</button></div><p id="sim1-challengeFeedback" role="status"></p></details></section></div>
 <details class="keyboard-panel"><summary>Keyboard & touch controls</summary><p class="interaction-help" id="sim1-keyboardHelp">Drag either graph to scrub and pause. Keyboard: ← → 0.1 s · Shift + arrow 1 s · Home / End · Space play/pause · R reset.</p></details></section>
-<section id="sim2" role="tabpanel" aria-labelledby="tab2" tabindex="0" hidden><div class="toolbar" aria-label="Playback controls">
+<section id="sim2" role="tabpanel" aria-labelledby="tab2" tabindex="0" hidden>
+<div class="profile-picker"><label for="sim2-motionProfile">Motion graph</label><select id="sim2-motionProfile" aria-describedby="sim2-profileDescription"></select><p id="sim2-profileDescription"></p><span id="sim2-profileAnnouncement" class="sr-only" role="status"></span></div>
+<div class="toolbar" aria-label="Playback controls">
 <button id="sim2-playBtn" class="primary">▶ Play</button><button id="sim2-stopBtn">■ Stop</button><button id="sim2-resetBtn">↺ Reset</button>
 <label class="speed-label"><span class="sr-only">Playback speed</span><select id="sim2-playbackSpeed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
 <span id="sim2-playbackStatus" role="status">Paused</span></div>
-<div class="timeline"><label for="sim2-timeScrubber">Time <output id="sim2-timeReadout">0.00 s</output></label><input id="sim2-timeScrubber" type="range" min="0" max="18" step="0.01" value="0" aria-label="Simulation time in seconds"><span>18 s</span></div>
+<div class="timeline"><label for="sim2-timeScrubber">Time <output id="sim2-timeReadout">0.00 s</output></label><input id="sim2-timeScrubber" type="range" min="0" max="18" step="0.01" value="0" aria-label="Simulation time in seconds"><span id="sim2-durationLabel">18 s</span></div>
 
 <section class="card motion-strip" aria-label="Motion and live values"><div class="road" role="img" aria-label="Car position along a road in metres"><div id="sim2-roadMarks"></div><div id="sim2-carContainer"><svg id="sim2-carSVG" width="80" height="40" viewBox="0 0 300 150">
 <rect x="50" y="60" width="200" height="50" rx="20" fill="red"/>
@@ -152,12 +156,12 @@
       <label><input id="sim2-accelerationArea" type="checkbox"> Shade acceleration area</label>
       <label><input id="sim2-averageAcceleration" type="checkbox"> Show average acceleration secant</label><p id="sim2-averageAccelerationResult" class="result"></p><p id="sim2-accelerationAreaResult" class="result"></p></details>
 <details id="sim2-derivedInfo"><summary>Derived position · integrating velocity</summary>
-<p id="sim2-optionalReadout"></p><p>Position is continuous, even where acceleration changes abruptly. The car reaches its maximum position of 136 m at 9.6 s, then reverses.</p></details>
+<p id="sim2-optionalReadout"></p><p id="sim2-profileNote"></p></details>
 <details id="sim2-concepts"><summary>Concepts & graph rules</summary><div id="sim2-conceptContent"></div></details></section>
 <section class="activities-column"><details id="sim2-motionDetails"><summary>Full live state & motion explanation</summary><p class="small road-caption">Position coordinate (m) · positive direction →</p>
 <dl class="live-grid" id="sim2-liveState"></dl><p id="sim2-segmentExplanation" class="interpretation"></p>
 <p id="sim2-endpointNote" class="small"></p></details><details id="sim2-abcde"><summary>ABCDE · direction and changing speed</summary>
-      <p>Read the velocity graph. For each segment, identify both direction and how speed changes.</p>
+      <p>A separate ABCDE motion: read the velocity graph below. For each segment, identify both direction and how speed changes.</p>
       <svg class="activity-graph" viewBox="0 0 480 230" role="img" aria-label="Velocity-time graph: A (0 s, 0 m/s), B (2 s, 20 m/s), C (4 s, 0 m/s), D (6 s, −20 m/s), E (8 s, 0 m/s).">
       <path d="M45 25V200M45 115H455" fill="none" stroke="#59697c"/>
       <path d="M45 115L145 35L245 115L345 195L445 115" fill="none" stroke="#087b65" stroke-width="3"/>

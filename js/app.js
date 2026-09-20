@@ -1,10 +1,10 @@
-import { model as positionModel } from './st-vt/physics.js';
-import { model as velocityModel } from './vt-at/physics.js';
+import { STVT_PROFILES } from './motion-profiles/stvt-profiles.js';
+import { VTAT_PROFILES } from './motion-profiles/vtat-profiles.js';
 import { createSimulation } from './simulation.js';
 import { setupTabs } from './tabs.js';
 
 const panels = [...document.querySelectorAll('[role="tabpanel"]')];
-const simulations = panels.map((panel, i) => createSimulation(panel, [positionModel, velocityModel][i]));
+const simulations = panels.map((panel, i) => createSimulation(panel, [STVT_PROFILES, VTAT_PROFILES][i]));
 let active = 0;
 setupTabs(index => {
   simulations[active].pause();

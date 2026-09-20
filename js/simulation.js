@@ -1,14 +1,15 @@
-import { stateAt, valueAt, limitsAt, interval } from './shared/physics-core.js';
+import { stateAt, valueAt, limitsAt, interval, facingAt } from './shared/physics-core.js';
 import { Timeline } from './shared/animation.js';
 import { Graph } from './shared/graph.js';
 import { setupActivities } from './shared/activities.js';
-export function createSimulation(root, model) {
+export function createSimulation(root, profiles) {
+let model = profiles.original ?? Object.values(profiles)[0];
 const prefix = root.id + '-';
 const $ = id => root.querySelector('#' + prefix + id);
 const fmt = (v, unit = '') => v === null ? 'Undefined' : `${Math.abs(v) < 1e-8 ? '0.00' : v.toFixed(2)}${unit ? ` ${unit}` : ''}`;
 const isPosition = model.id === 1;
-const primary = new Graph($(isPosition ? 'positionCanvas' : 'velocityCanvas'), model, isPosition ? 0 : 1, isPosition ? [-120,120] : [-35,35]);
-const derived = new Graph($(isPosition ? 'velocityCanvas' : 'accCanvas'), model, isPosition ? 1 : 2, isPosition ? [-25,25] : [-15,10]);
+const primary = new Graph($(isPosition ? 'positionCanvas' : 'velocityCanvas'), model, isPosition ? 0 : 1, model.ranges[isPosition ? 0 : 1]);
+const derived = new Graph($(isPosition ? 'velocityCanvas' : 'accCanvas'), model, isPosition ? 1 : 2, model.ranges[isPosition ? 1 : 2]);
 const graphs = [primary, derived];
 let predictionHidden = false;
 const fields = [['t','Time t','s'],['position','Position s','m'],['velocity','Velocity v','m s⁻¹'],['speed','Speed |v|','m s⁻¹'],['acceleration','Acceleration a','m s⁻²'],['displacement','Displacement Δs','m'],['distance','Distance travelled','m'],['direction','Direction',''],['motionState','Motion state','']];
@@ -27,19 +28,13 @@ function cornerText(t, order) {
 function explanation(state) {
   if (state.velocity === null) return cornerText(state.t, 1);
   if (state.acceleration === null) return `${state.direction}. ${cornerText(state.t, 2)}`;
-  const segment = model.segments.find(s => state.t < s.end) ?? model.segments.at(-1);
   const moving = `${state.direction}; ${state.motionState.toLowerCase()}.`;
   const meaning = state.velocity === 0
     ? state.acceleration === 0 ? 'The position graph is horizontal and velocity is zero.' : 'Velocity is zero at this instant. Nonzero acceleration means this is not a stationary interval.'
     : isPosition
       ? `The position graph ${state.velocity > 0 ? 'rises' : 'falls'}; its steepness ${state.acceleration === 0 ? 'is constant' : state.velocity * state.acceleration > 0 ? 'increases' : 'decreases'}.`
       : `Velocity is ${state.velocity > 0 ? 'positive' : 'negative'} and acceleration is ${state.acceleration === 0 ? 'zero' : state.acceleration > 0 ? 'positive' : 'negative'}. ${state.acceleration === 0 ? 'The velocity graph is horizontal.' : state.velocity * state.acceleration > 0 ? 'Matching signs mean increasing speed.' : 'Opposite signs mean decreasing speed.'}`;
-  const zero = segment.c[2] ? segment.start - segment.c[1] / (2 * segment.c[2]) : Infinity;
-  let start = segment.start, end = segment.end;
-  if (zero > start && zero < end) {
-    if (state.t < zero) end = zero; else start = zero;
-  }
-  return `${start}–${end} s: ${moving} ${meaning}`;
+  return `At t = ${fmt(state.t, 's')}: ${moving} ${meaning}`;
 }
 function render() {
   const state = stateAt(model, timeline.time), t = state.t;
@@ -60,7 +55,9 @@ function render() {
   const roadX = position => padding + (position - model.road[0]) / (model.road[1] - model.road[0]) * (roadWidth - 2 * padding);
   $('carContainer').style.left = `${roadX(state.position)}px`;
   // No unique direction at a velocity jump: mute the car and explicitly label the state.
-  $('carSVG').style.transform = state.velocity !== null && state.velocity < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+  // At rest use the incoming direction (or outgoing direction at t=0), even
+  // after a direct seek. This is deterministic and avoids orientation jitter.
+  $('carSVG').style.transform = facingAt(model, t) < 0 ? 'scaleX(-1)' : 'scaleX(1)';
   $('carSVG').style.opacity = state.velocity === null ? '0.4' : '1';
   root.querySelector('.road').setAttribute('aria-label', `Car position ${fmt(state.position, 'metres')}; ${state.direction.toLowerCase()}`);
   root.querySelectorAll('.mark').forEach(mark => { mark.style.left = `${roadX(Number(mark.dataset.position))}px`; });
@@ -76,6 +73,8 @@ function render() {
     $('optionalReadout').textContent = state.acceleration === null ? cornerText(t,2) : `Current a = ${fmt(state.acceleration,'m s⁻²')}. On each smooth interval a is the rate of change of velocity.`;
   } else {
     const start = numeric('areaStart',0), absolute = $('areaMode').value === 'distance', valid = start <= t;
+    // Reflected negative area must fit above zero, including all-negative profiles.
+    primary.range = absolute ? [model.ranges[1][0], Math.max(model.ranges[1][1], -model.ranges[1][0])] : model.ranges[1];
     const area = interval(model,start,t);
     Object.assign(pOptions,{area:$('velocityArea').checked && valid,start,absolute});
     Object.assign(dOptions,{area:$('accelerationArea').checked && valid,start});
@@ -85,7 +84,7 @@ function render() {
     const positive = (area.distance + area.displacement)/2, negative = (area.displacement - area.distance)/2;
     $('velocityAreaResult').textContent = valid ? `${fmt(start,'s')} → ${fmt(t,'s')}: ${absolute ? 'distance = ∫|v| dt' : 'Δs = ∫v dt'} = ${fmt(absolute ? area.distance : area.displacement,'m')}. Positive contribution +${fmt(positive,'m')}; negative contribution ${fmt(negative,'m')}. Net Δs = ${fmt(area.displacement,'m')}; distance = ${fmt(area.distance,'m')}.` : 'Starting time is later than current time. Scrub forward or choose an earlier start to shade an interval.';
     $('accelerationAreaResult').textContent = valid ? `Δv = ∫a dt = ${fmt(area.deltaVelocity,'m s⁻¹')}. v_final = v_initial + Δv: ${fmt(area.finalVelocity)} = ${fmt(area.initialVelocity)} + (${fmt(area.deltaVelocity)}) m s⁻¹. Undefined acceleration at isolated corners does not change the area.` : 'Choose a starting time at or before the current time.';
-    $('optionalReadout').textContent = `s = ${fmt(state.position,'m')}; displacement from the origin = ${fmt(state.displacement,'m')}; accumulated distance = ${fmt(state.distance,'m')}. s(t) = s(0) + ∫₀ᵗ v dt.`;
+    $('optionalReadout').textContent = `s = ${fmt(state.position,'m')}; displacement from the starting position = ${fmt(state.displacement,'m')}; accumulated distance = ${fmt(state.distance,'m')}. s(t) = s(0) + ∫₀ᵗ v dt.`;
   }
   primary.draw(t,pOptions); derived.draw(t,dOptions);
 }
@@ -143,6 +142,50 @@ function onKeydown(event) {
   event.preventDefault();
 }
 function resize() { graphs.forEach(graph => graph.resize()); render(); }
-setupActivities(model.id, root, prefix);
+const activities = setupActivities(model, root, prefix);
+const categories = [...new Set(Object.values(profiles).map(p => p.category))];
+$('motionProfile').replaceChildren(...categories.map(category => {
+  const group = document.createElement('optgroup'); group.label = category;
+  for (const profile of Object.values(profiles).filter(p => p.category === category)) {
+    const option = document.createElement('option'); option.value = profile.profileId;
+    option.textContent = profile.shortTitle; group.append(option);
+  }
+  return group;
+}));
+function loadProfile(profileId, announce = true) {
+  if (!profiles[profileId]) return;
+  pause();
+  model = profiles[profileId];
+  timeline.end = model.end; timeline.time = 0;
+  for (const graph of graphs) { graph.model = model; graph.range = model.ranges[graph.order];
+    graph.canvas.setAttribute('aria-label', `${model.title}: interactive ${['position','velocity','acceleration'][graph.order]}-time graph, 0 to ${model.end} seconds`);
+  }
+  $('motionProfile').value = profileId;
+  $('profileDescription').textContent = model.description;
+  $('profileDescription').title = model.learningFocus;
+  $('timeScrubber').max = model.end;
+  $('durationLabel').textContent = `${model.end} s`;
+  $('roadMarks').innerHTML = model.roadTicks.map(n => `<span class="mark" data-position="${n}">${Number(n.toFixed(2))}</span>`).join('');
+  if (isPosition) {
+    for (const id of ['t1','t2']) $(id).max = model.end;
+    $('t1').value = 0; $('t2').value = Math.min(10, model.end);
+    const corners = model.discontinuities[2];
+    $('profileNote').textContent = corners.length
+      ? `Acceleration is undefined at ${corners.join(', ')} s. A velocity jump requires an idealised impulse; isolated corner values are not finite accelerations.`
+      : 'On this smooth motion, velocity is the derivative of position and acceleration is the derivative of velocity.';
+  } else {
+    $('areaStart').max = model.end; $('areaStart').value = 0;
+    $('profileNote').textContent = model.zeroCrossings.length
+      ? `Velocity crosses zero at ${model.zeroCrossings.join(', ')} s. Split the signed area there to calculate distance travelled.`
+      : 'Position is the exact integral of this velocity graph. Signed area is displacement; absolute area is distance travelled.';
+  }
+  $('predictionAnswer').value = '';
+  $('predictionPrompt').querySelector('p').textContent = `For “${model.title}”, predict the ${isPosition ? 'velocity graph from the position slope' : 'acceleration graph from the velocity slope'}. Where is it positive, zero or negative? Where is the derivative undefined?`;
+  activities.setProfile(model);
+  if (announce) $('profileAnnouncement').textContent = `${model.title} selected. Simulation reset to zero seconds. ${model.description}`;
+  resize();
+}
+$('motionProfile').addEventListener('change', event => loadProfile(event.target.value));
+loadProfile(model.profileId, false);
 return { pause, resize, onKeydown };
 }

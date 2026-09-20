@@ -1,4 +1,4 @@
-import { example } from './physics-core.js';
+import { example, stateAt, interval } from './physics-core.js';
 export const challenges = {
   1: [
     ['At t = 3 s, is velocity positive, negative or zero?', 'positive', 'Look at the slope of the position graph.', 'v = 4t = 12 m s⁻¹, so velocity is positive.'],
@@ -43,12 +43,31 @@ const concepts = [
   ['Graph rules', 'Position-time gradient → velocity. Velocity-time gradient → acceleration; signed area → displacement. Acceleration-time signed area → change in velocity.'],
   ['Corners and units', 'At a sharp corner the derivative is undefined exactly at that instant. Position/displacement: m; time: s. A decreasing graph describes position, never accumulated distance.']
 ];
-export function setupActivities(id, root, prefix) {
+export function profileChallenges(model) {
+  if (model.profileId === 'original') return challenges[model.id];
+  const t = (model.segments[0].start + model.segments[0].end) / 2;
+  const state = stateAt(model, t), total = interval(model, 0, model.end);
+  const sign = state.velocity === 0 ? 'zero' : state.velocity > 0 ? 'positive' : 'negative';
+  const number = n => Number(n.toFixed(2)).toString();
+  return [
+    [`At t = ${t} s, is velocity positive, negative or zero?`, sign, 'Use the sign of velocity, or the slope of position.', `Velocity is ${number(state.velocity)} m s⁻¹: ${sign}.`],
+    [`What is the position at t = 0 s, in metres?`, number(model.positionAt(0)), 'Read the starting position, not the displacement.', `s(0) = ${number(model.positionAt(0))} m. Displacement starts at zero.`],
+    [`At t = ${t} s, what is the speed in m s⁻¹?`, number(state.speed), 'Speed is the magnitude of velocity.', `|v| = ${number(state.speed)} m s⁻¹.`],
+    [`At t = ${t} s, what is acceleration in m s⁻²?`, number(state.acceleration), 'Find the slope of the velocity graph.', `a(${t}) = ${number(state.acceleration)} m s⁻².`],
+    [`At t = ${t} s, is motion at rest, instantaneously at rest, constant velocity, speeding up or slowing down?`, state.motionState.toLowerCase(), 'Compare velocity and acceleration. Zero velocity with nonzero acceleration is an instantaneous rest.', `${state.motionState}: v = ${number(state.velocity)} m s⁻¹ and a = ${number(state.acceleration)} m s⁻².`],
+    [`What is total displacement from 0 to ${model.end} s, in metres?`, number(total.displacement), 'Subtract starting position from final position.', `Δs = s(${model.end}) − s(0) = ${number(total.displacement)} m.`],
+    [`What is total distance travelled from 0 to ${model.end} s, in metres?`, number(total.distance), 'Add path lengths, splitting at each reversal.', `Distance = ${number(total.distance)} m; signed displacement = ${number(total.displacement)} m.`],
+    model.zeroCrossings.length
+      ? ['At what time does the first smooth direction reversal occur, in seconds?', number(model.zeroCrossings[0]), 'Find where velocity crosses zero.', `Velocity changes sign at t = ${number(model.zeroCrossings[0])} s.`]
+      : [`What is average velocity from 0 to ${model.end} s, in m s⁻¹?`, number(total.averageVelocity), 'Divide total displacement by elapsed time.', `v_avg = ${number(total.displacement)}/${model.end} = ${number(total.averageVelocity)} m s⁻¹.`]
+  ];
+}
+export function setupActivities(model, root, prefix) {
+  const id = model.id;
   const $ = name => root.querySelector('#' + prefix + name);
   const namespace = markup => markup.replace(/\b(id|for)="([^"]+)"/g, (_, attr, value) => `${attr}="${prefix}${value}"`);
   $('conceptContent').innerHTML = namespace(`<dl class="concept-list">${concepts.map(([term, text]) => `<dt>${term}</dt><dd>${text}</dd>`).join('')}</dl>`);
-  const questions = challenges[id];
-  $('challengeSelect').innerHTML = namespace(questions.map((q, i) => `<option value="${i}">Challenge ${i + 1} of ${questions.length}</option>`).join(''));
+  let questions;
   let attempted = false;
   const current = () => questions[Number($('challengeSelect').value)];
   const showQuestion = () => { attempted = false; $('challengeQuestion').textContent = current()[0]; $('challengeAnswer').value = ''; $('challengeFeedback').textContent = ''; };
@@ -61,8 +80,15 @@ export function setupActivities(id, root, prefix) {
   });
   $('hintBtn').addEventListener('click', () => { $('challengeFeedback').textContent = current()[2]; });
   $('solutionBtn').addEventListener('click', () => { $('challengeFeedback').textContent = attempted ? current()[3] : 'Try an answer and press Check answer before revealing the solution.'; });
-  showQuestion();
+  function setProfile(profile) {
+    questions = profileChallenges(profile);
+    $('challengeSelect').innerHTML = questions.map((q, i) => `<option value="${i}">Challenge ${i + 1} of ${questions.length}</option>`).join('');
+    $('challengeQuestion').setAttribute('aria-label', `Challenge for ${profile.title}`);
+    showQuestion();
+  }
+  setProfile(model);
   if (id === 1) setupExample($, namespace); else setupABCDE($, namespace);
+  return { setProfile };
 }
 function setupExample($, namespace) {
   const questions = [

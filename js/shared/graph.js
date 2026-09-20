@@ -1,4 +1,4 @@
-import { valueAt, segmentValue, limitsAt } from './physics-core.js';
+import { valueAt, segmentValue, limitsAt, rootsAt } from './physics-core.js';
 export const colors = ['#2454b8', '#087b65', '#8540a3'];
 const units = ['s (m)', 'v (m s⁻¹)', 'a (m s⁻²)'];
 function niceStep(range, count) {
@@ -40,8 +40,7 @@ export class Graph {
     for (const s of this.model.segments) {
       const lo = Math.max(start, s.start), hi = Math.min(end, s.end);
       if (hi <= lo) continue;
-      const zero = this.order === 1 && s.c[2] !== 0 ? s.start - s.c[1] / (2 * s.c[2]) : Infinity;
-      const cuts = zero > lo && zero < hi ? [lo, zero, hi] : [lo, hi];
+      const cuts = [lo, ...rootsAt(s, this.order).filter(t => t > lo && t < hi), hi];
       for (let i = 1; i < cuts.length; i++) {
         const a = cuts[i - 1], b = cuts[i], negative = segmentValue(s, (a + b) / 2, this.order) < 0;
         c.beginPath(); c.moveTo(this.x(a), this.y(0));

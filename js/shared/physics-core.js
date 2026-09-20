@@ -2,8 +2,22 @@ export const clamp = (t, end) => Math.max(0, Math.min(end, Number.isFinite(t) ? 
 const near = (a, b) => Math.abs(a - b) < 1e-9;
 export function segmentValue(segment, t, order = 0) {
   const u = t - segment.start;
-  const [p, v, halfA] = segment.c;
-  return order === 0 ? p + v * u + halfA * u * u : order === 1 ? v + 2 * halfA * u : 2 * halfA;
+  return coefficientsAt(segment.c, order).reduceRight((value, c) => value * u + c, 0);
+}
+export function coefficientsAt(coefficients, order = 0) {
+  let result = coefficients;
+  for (let i = 0; i < order; i++) result = result.slice(1).map((c, j) => c * (j + 1));
+  return result;
+}
+// Exact roots for the linear/quadratic derivatives of our cubic-or-lower presets.
+// A zero interval has no isolated roots. Its endpoints are already segment cuts.
+export function rootsAt(segment, order = 1) {
+  const [c = 0, b = 0, a = 0] = coefficientsAt(segment.c, order);
+  const roots = Math.abs(a) < 1e-12 ? (Math.abs(b) < 1e-12 ? [] : [-c / b])
+    : b * b - 4 * a * c < 0 ? []
+      : [(-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a), (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a)];
+  return [...new Set(roots.map(u => u + segment.start))]
+    .filter(t => t >= segment.start && t <= segment.end).sort((a, b) => a - b);
 }
 export function limitsAt(model, t, order) {
   const i = model.segments.findIndex((s, index) => index > 0 && near(s.start, t));
@@ -27,8 +41,7 @@ export function interval(model, start, end) {
   for (const s of model.segments) {
     const lo = Math.max(Math.min(a, b), s.start), hi = Math.min(Math.max(a, b), s.end);
     if (hi <= lo) continue;
-    const zero = s.c[2] === 0 ? Infinity : s.start - s.c[1] / (2 * s.c[2]);
-    const cuts = zero > lo && zero < hi ? [lo, zero, hi] : [lo, hi];
+    const cuts = [lo, ...rootsAt(s).filter(t => t > lo && t < hi), hi];
     for (let i = 1; i < cuts.length; i++) distance += Math.abs(segmentValue(s, cuts[i]) - segmentValue(s, cuts[i - 1]));
   }
   const displacement = valueAt(model, b) - valueAt(model, a);
@@ -42,6 +55,27 @@ export function classify(v, a) {
   if (near(v, 0)) return near(a, 0) ? 'At rest' : 'Instantaneously at rest';
   if (near(a, 0)) return 'Constant velocity';
   return v * a > 0 ? 'Speeding up' : 'Slowing down';
+}
+// Deterministic facing even after seeking into a long stationary interval:
+// retain the last nonzero direction, or the first future direction at the start.
+export function facingAt(model, time) {
+  const t = clamp(time, model.end), velocity = valueAt(model, t, 1);
+  if (velocity !== null && !near(velocity, 0)) return Math.sign(velocity);
+  for (const s of [...model.segments].reverse()) {
+    const hi = Math.min(t, s.end);
+    if (hi <= s.start) continue;
+    const lo = rootsAt(s).filter(root => root < hi).at(-1) ?? s.start;
+    const v = segmentValue(s, (lo + hi) / 2, 1);
+    if (!near(v, 0)) return Math.sign(v);
+  }
+  for (const s of model.segments) {
+    const lo = Math.max(t, s.start);
+    if (lo >= s.end) continue;
+    const hi = rootsAt(s).find(root => root > lo) ?? s.end;
+    const v = segmentValue(s, (lo + hi) / 2, 1);
+    if (!near(v, 0)) return Math.sign(v);
+  }
+  return 1;
 }
 export function stateAt(model, time) {
   const t = clamp(time, model.end), position = valueAt(model, t), velocity = valueAt(model, t, 1), acceleration = valueAt(model, t, 2);

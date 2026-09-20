@@ -8,6 +8,10 @@ body { max-width:1200px; padding:6px 8px; font-size:12px; }
 .tabs span { display:block; font-size:10px; font-weight:500; white-space:nowrap; }
 .tabs strong { display:block; font-size:14px; margin-top:2px; }
 .tabs [aria-selected="true"] { background:#163c4b; border-color:#163c4b; color:#fff; }
+.profile-picker { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:3px 7px; margin:0 0 6px; }
+.profile-picker label { font-weight:650; font-size:11px; }
+.profile-picker select { width:100%; min-width:0; text-overflow:ellipsis; font-size:12px; }
+.profile-picker p { grid-column:1/-1; margin:0; color:var(--muted); font-size:11px; line-height:1.35; }
 button,select,input:not([type=range]):not([type=checkbox]),textarea { min-height:36px; padding:6px 8px; }
 .toolbar { gap:5px; flex-wrap:nowrap; }
 .toolbar button { padding:6px 8px; }

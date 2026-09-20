@@ -2,6 +2,10 @@
 
 A single-page, smartphone-first simulation with **Displacement → Velocity** and **Velocity → Acceleration** tabs. Each tab retains its own timeline, predictions, activity answers and tool settings. Switching tabs pauses the outgoing motion.
 
+Choose among **9 position-time profiles** and **8 velocity-time profiles** using the compact Motion graph menu. Both original journeys remain the defaults. Each tab retains its own selection; changing a motion pauses and resets that tab to zero. The graphs, car, values, axes, tools and challenges all use the selected mathematical model.
+
+See [the complete profile equations, extension guide and upgrade verification](docs/MOTION-PROFILES.md).
+
 ## Run locally
 
 Requires Node.js to run the optional development server:
@@ -25,9 +29,9 @@ Deploy the project as a static website with `index.html` at its root. Runtime fi
 
 ## Architecture and preservation
 
-`js/app.js` owns the active simulation, global keyboard input and one resize observer. `js/tabs.js` manages accessible tabs. `js/simulation.js` scopes the original controller to each panel. Shared physics, timeline, graph and activity modules live in `js/shared/`; unchanged motion coefficients live in `js/st-vt/physics.js` and `js/vt-at/physics.js`.
+`js/app.js` owns the active simulation, global keyboard input and one resize observer. `js/tabs.js` manages accessible tabs. `js/simulation.js` scopes the controller and profile selection to each panel. Shared physics, timeline, graph and activity modules live in `js/shared/`; original motion coefficients remain in `js/st-vt/physics.js` and `js/vt-at/physics.js`. The registries in `js/motion-profiles/` define position polynomials for STVT and velocity polynomials for VTAT. The shared factory derives exact derivatives, integrated position, ranges, corners and reversal metadata. The renderer and controller contain no profile-specific motion branches.
 
-Both complete source simulations were audited in the neighbouring `linear-motion` folder. Their identical shared modules were consolidated. No original physics formula or educational feature was removed. The new average-acceleration display is derived from the existing interval calculation. Canvas resolution is capped at DPR 2; mobile ticks retain signed values.
+Both complete source simulations were audited in the neighbouring `linear-motion` folder. Their identical shared modules were consolidated. No original physics formula or educational feature was removed. Average acceleration is derived from the interval calculation. Canvas resolution is capped at DPR 2; mobile ticks retain signed values. The separate polynomial and ABCDE exercises retain their own explicitly labelled examples; challenge mode follows the selected profile.
 
 See [the feature inventory](docs/FEATURE-INVENTORY.md) and [verification report](VERIFICATION.md).
 
