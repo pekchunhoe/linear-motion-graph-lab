@@ -2,6 +2,7 @@ import { stateAt, valueAt, limitsAt, interval, facingAt } from './shared/physics
 import { Timeline } from './shared/animation.js';
 import { Graph } from './shared/graph.js';
 import { setupActivities } from './shared/activities.js';
+import { createProfileBrowser, groupProfiles } from './shared/profile-browser.js';
 export function createSimulation(root, profiles) {
 let model = profiles.original ?? Object.values(profiles)[0];
 const prefix = root.id + '-';
@@ -141,17 +142,18 @@ function onKeydown(event) {
   else return;
   event.preventDefault();
 }
-function resize() { graphs.forEach(graph => graph.resize()); render(); }
+function resize() { graphs.forEach(graph => graph.resize()); render(); profileBrowser?.resize(); }
 const activities = setupActivities(model, root, prefix);
-const categories = [...new Set(Object.values(profiles).map(p => p.category))];
-$('motionProfile').replaceChildren(...categories.map(category => {
+const groupedProfiles = groupProfiles(profiles);
+$('motionProfile').replaceChildren(...groupedProfiles.map(({ category, profiles: categoryProfiles }) => {
   const group = document.createElement('optgroup'); group.label = category;
-  for (const profile of Object.values(profiles).filter(p => p.category === category)) {
+  for (const profile of categoryProfiles) {
     const option = document.createElement('option'); option.value = profile.profileId;
     option.textContent = profile.shortTitle; group.append(option);
   }
   return group;
 }));
+let profileBrowser;
 function loadProfile(profileId, announce = true) {
   if (!profiles[profileId]) return;
   pause();
@@ -162,7 +164,9 @@ function loadProfile(profileId, announce = true) {
   }
   $('motionProfile').value = profileId;
   $('profileDescription').textContent = model.description;
-  $('profileDescription').title = model.learningFocus;
+  $('profileFocus').textContent = `Focus: ${model.learningFocus}`;
+  $('profileEquationText').textContent = model.equation;
+  profileBrowser?.setSelected(profileId);
   $('timeScrubber').max = model.end;
   $('durationLabel').textContent = `${model.end} s`;
   $('roadMarks').innerHTML = model.roadTicks.map(n => `<span class="mark" data-position="${n}">${Number(n.toFixed(2))}</span>`).join('');
@@ -185,6 +189,7 @@ function loadProfile(profileId, announce = true) {
   if (announce) $('profileAnnouncement').textContent = `${model.title} selected. Simulation reset to zero seconds. ${model.description}`;
   resize();
 }
+profileBrowser = createProfileBrowser({ root, profiles, prefix, selectProfile: profileId => loadProfile(profileId) });
 $('motionProfile').addEventListener('change', event => loadProfile(event.target.value));
 loadProfile(model.profileId, false);
 return { pause, resize, onKeydown };

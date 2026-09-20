@@ -155,11 +155,13 @@ for (const [width,height] of sizes) test(`profiles responsive ${width}×${height
         return { overflow: document.documentElement.scrollWidth > innerWidth, carFits: car.left >= road.left && car.right <= road.right,
           pickerHeight: picker.height,
           badControls: [...root.querySelectorAll('select,input,button')].filter(n=>n.getClientRects().length).filter(n=>{const r=n.getBoundingClientRect(); return r.left<0||r.right>innerWidth||r.width<=0;}).map(n=>n.id),
-          graphs: [...root.querySelectorAll('canvas')].map(n=>({width:n.clientWidth,height:n.clientHeight})),
+          graphs: [...root.querySelectorAll('canvas:not(.profile-preview)')].map(n=>({width:n.clientWidth,height:n.clientHeight})),
           marks: [...root.querySelectorAll('.mark')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right};}) };
       });
       expect(geometry.overflow).toBe(false); expect(geometry.carFits).toBe(true); expect(geometry.badControls).toEqual([]);
-      expect(geometry.pickerHeight).toBeLessThan(85);
+      // Phones keep the library closed; wider screens keep the complete,
+      // compact browser above the dashboard.
+      expect(geometry.pickerHeight).toBeLessThanOrEqual(width <= 900 ? 145 : 390);
       expect(geometry.graphs.every(r=>r.width>200&&r.height>=145)).toBe(true);
       for (let i=1;i<geometry.marks.length;i++) expect(geometry.marks[i].left).toBeGreaterThan(geometry.marks[i-1].right);
     }

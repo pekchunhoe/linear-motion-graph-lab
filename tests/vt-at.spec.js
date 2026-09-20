@@ -12,7 +12,7 @@ async function geometry(page) {
   return page.evaluate(()=>{
     const rect=selector=>{const r=document.getElementById('sim2').querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
     return {overflow:document.documentElement.scrollWidth>innerWidth,car:rect('#sim2-carContainer'),road:rect('.road'),
-      canvases:[...document.getElementById('sim2').querySelectorAll('canvas')].map(c=>({width:c.clientWidth,height:c.clientHeight,backing:c.width,dpr:devicePixelRatio,focus:c.tabIndex,label:c.getAttribute('aria-label')})),
+      canvases:[...document.getElementById('sim2').querySelectorAll('canvas:not(.profile-preview)')].map(c=>({width:c.clientWidth,height:c.clientHeight,backing:c.width,dpr:devicePixelRatio,focus:c.tabIndex,label:c.getAttribute('aria-label')})),
       cards:[...document.getElementById('sim2').querySelectorAll('.dashboard>.card')].map(c=>c.getBoundingClientRect().y),
       badControls:[...document.getElementById('sim2').querySelectorAll('button,input,select,textarea')].filter(c=>c.getClientRects().length).filter(c=>{const r=c.getBoundingClientRect();return r.width<=0||r.right>innerWidth+1||r.left<0;}).map(c=>c.id)};
   });

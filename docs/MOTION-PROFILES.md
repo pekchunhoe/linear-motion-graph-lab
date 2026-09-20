@@ -4,6 +4,14 @@ Architecture: the existing two-tab simulation, canvas renderer, timeline, car, t
 
 The registries contain **9 STVT profiles** and **8 VTAT profiles**. Both original journeys remain selected by default. A native, labelled, category-grouped menu appears directly under the app tabs. Changing it pauses playback, releases any captured pointer, resets time and interval endpoints, clears the old prediction and challenge answer, and updates the complete simulation. Predict mode stays hidden if it was hidden, and reveals the newly selected graph. Each tab retains its own chosen profile, playback position and tool state across tab switches.
 
+## Graph-library selector
+
+The registry remains the only source for the menu, preview title, concept label, learning focus and equation. Profiles are ordered as **Basic motion**, **Accelerated motion**, **Reversal** and **Multi-stage**. The STVT library contains 3, 3, 1 and 2 profiles in those groups; VTAT contains 2, 2, 2 and 2.
+
+Above 900 px, compact grouped cards stay visible beneath the select. At 900 px and below, the page stays short: the native select and **Browse graphs** button are shown, while the cards open only on request. Each card is a keyboard-accessible button; Enter or Space selects it, Escape closes the small-screen browser, and focus returns to Browse graphs. Selected cards use an explicit check, border, background and `aria-pressed` state.
+
+Preview canvases render the actual selected family’s primary quantity: position for STVT and velocity for VTAT. They sample the same segment coefficients as the main graphs, include simple axes, have no animation or independent motion state, redraw on layout changes, and cap backing resolution at DPR 2. Selecting either a card or the native select invokes the same profile-loading action, so it resets and updates the complete simulation identically. The equation disclosure uses the profile’s existing `equation` metadata.
+
 ## STVT profiles
 
 Time `t` is in seconds; position `s` is in metres. For piecewise formulas below, use `u = t − start` for each listed interval. Durations start at zero. At shared endpoints the position is continuous; derivatives are undefined where the corresponding one-sided slopes disagree.
@@ -88,7 +96,7 @@ The factory calculates extrema from exact derivative roots, pads finite graph/ro
 
 ## Responsive verification
 
-Every listed size is exercised with all 17 profiles. Assertions cover accessible native menus, no horizontal page overflow, control bounds, graph size, car containment and non-overlapping road labels. Small-chart unit tests verify finite geometry and tick placement; screenshots were inspected at 320 px and desktop width. Expanded learning panels, zoom, touch/pointer behaviour and reduced motion remain covered by the original browser suite.
+Every listed size is exercised with all 17 profiles. Assertions cover accessible native menus, no horizontal page overflow, control bounds, graph size, car containment and non-overlapping road labels. The graph-library browser is also opened and checked at every listed size. Small-chart unit tests verify finite geometry and tick placement; screenshots were inspected at 320 px and desktop width. Expanded learning panels, zoom, touch/pointer behaviour and reduced motion remain covered by the original browser suite.
 
 | Viewport | Selector, overflow, graphs, car, controls, road labels |
 |---|---|
@@ -118,14 +126,16 @@ Final test counts are recorded below after executing the final source tree. Cate
 | Profile activity tests | 17 | 0 |
 | Profile graph-rendering tests | 17 | 0 |
 | Library preservation and special regressions | 3 | 0 |
+| Profile-browser grouping and exact preview-rendering tests | 19 | 0 |
 | Original unit tests | 110 | 0 |
-| **All unit tests** | **245** | **0** |
+| **All unit tests** | **264** | **0** |
 | Selector browser tests | 17 | 0 |
 | New responsive browser tests, each covering all 17 profiles | 11 | 0 |
 | Other new browser tests: switching, resizing, accessibility | 3 | 0 |
+| Profile-browser browser tests: cards, mobile browsing, resize, accessibility and 11 viewports | 15 | 0 |
 | Original browser tests | 50 | 0 |
-| **All browser tests** | **81** | **0** |
-| All responsive browser tests, including original suites | 37 | 0 |
+| **All browser tests** | **96** | **0** |
+| All responsive browser tests, including original suites | 48 | 0 |
 
 Console/page errors: **0**. Accessibility: native keyboard selection and axe audits of expanded panels pass. Browser: installed Microsoft Edge via Playwright; DPR capped at 2.
 
@@ -139,7 +149,7 @@ npm run test:browser
 git diff --check
 ```
 
-The intermediate browser run passed 80 tests; the final run includes the additional selected-profile resize regression and passes 81. The initial sandboxed browser attempts could not write artifacts; the successful runs used elevated execution permission. The in-app Browser connection was unavailable. Final JSON results are in `test-results/results.json`; Playwright screenshots are under `test-results/`. These generated files are ignored by Git.
+The final browser run passes 96 tests, including the grouped preview library. The initial sandboxed browser attempts could not write artifacts; successful runs used elevated execution permission. The in-app Browser connection was unavailable. Final JSON results are in `test-results/results.json`; Playwright screenshots are under `test-results/`. These generated files are ignored by Git.
 
 ## Files modified
 

@@ -133,7 +133,7 @@ test('DPR is capped, aligned plots survive rotation, captured pointer is release
     await page.setViewportSize({width,height});
     for (const n of [1,2]) {
       await page.locator('#tab'+n).click();
-      const geometry = await page.locator('#sim'+n+' canvas').evaluateAll(nodes=>nodes.map(c=>({x:c.getBoundingClientRect().x,w:c.getBoundingClientRect().width,backing:c.width})));
+      const geometry = await page.locator('#sim'+n+' canvas:not(.profile-preview)').evaluateAll(nodes=>nodes.map(c=>({x:c.getBoundingClientRect().x,w:c.getBoundingClientRect().width,backing:c.width})));
       expect(Math.abs(geometry[0].w-geometry[1].w)).toBeLessThan(1);
       if (width<1000) expect(geometry[0].x).toBe(geometry[1].x);
       expect(geometry.every(g=>g.backing<=Math.ceil(g.w*2))).toBe(true);

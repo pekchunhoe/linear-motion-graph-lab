@@ -4,6 +4,8 @@ A single-page, smartphone-first simulation with **Displacement → Velocity** an
 
 Choose among **9 position-time profiles** and **8 velocity-time profiles** using the compact Motion graph menu. Both original journeys remain the defaults. Each tab retains its own selection; changing a motion pauses and resets that tab to zero. The graphs, car, values, axes, tools and challenges all use the selected mathematical model.
 
+On screens wider than 900 px, the selector also presents a compact grouped graph library with real schematic previews. On phones and smaller tablets, the native select remains the primary control and **Browse graphs** opens the same library when wanted. The optional equation disclosure comes directly from each profile's metadata.
+
 See [the complete profile equations, extension guide and upgrade verification](docs/MOTION-PROFILES.md).
 
 ## Run locally
